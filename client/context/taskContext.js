@@ -7,12 +7,21 @@ const TasksContext = createContext();
 
 const serverUrl = "https://taskmanagement-lb9j.onrender.com/api/v1";
 
+// default empty task
+const initialTask = {
+  title: "",
+  description: "",
+  priority: "low",
+  dueDate: "",
+  completed: false,
+};
+
 export const TasksProvider = ({ children }) => {
   const userId = useUserContext().user._id;
 
   const [tasks, setTasks] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
-  const [task, setTask] = React.useState({});
+  const [task, setTask] = React.useState(initialTask);
 
   const [isEditing, setIsEditing] = React.useState(false);
   const [priority, setPriority] = React.useState("all");
@@ -23,7 +32,7 @@ export const TasksProvider = ({ children }) => {
   const openModalForAdd = () => {
     setModalMode("add");
     setIsEditing(true);
-    setTask({});
+    setTask(initialTask);
   };
 
   const openModalForEdit = (task) => {
@@ -32,24 +41,22 @@ export const TasksProvider = ({ children }) => {
     setActiveTask(task);
   };
 
-  const openProfileModal = () => {
-    setProfileModal(true);
-  };
+  const openProfileModal = () => setProfileModal(true);
 
   const closeModal = () => {
     setIsEditing(false);
     setProfileModal(false);
     setModalMode("");
     setActiveTask(null);
-    setTask({});
+    setTask(initialTask);
   };
 
-  // get tasks
   const getTasks = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${serverUrl}/tasks`);
-
+      const response = await axios.get(`${serverUrl}/tasks`, {
+        withCredentials: true,
+      });
       setTasks(response.data.tasks);
     } catch (error) {
       console.log("Error getting tasks", error);
@@ -57,12 +64,12 @@ export const TasksProvider = ({ children }) => {
     setLoading(false);
   };
 
-  // get task
   const getTask = async (taskId) => {
     setLoading(true);
     try {
-      const response = await axios.get(`${serverUrl}/task/${taskId}`);
-
+      const response = await axios.get(`${serverUrl}/task/${taskId}`, {
+        withCredentials: true,
+      });
       setTask(response.data);
     } catch (error) {
       console.log("Error getting task", error);
@@ -73,10 +80,9 @@ export const TasksProvider = ({ children }) => {
   const createTask = async (task) => {
     setLoading(true);
     try {
-      const res = await axios.post(`${serverUrl}/task/create`, task);
-
-      console.log("Task created", res.data);
-
+      const res = await axios.post(`${serverUrl}/task/create`, task, {
+        withCredentials: true,
+      });
       setTasks([...tasks, res.data]);
       toast.success("Task created successfully");
     } catch (error) {
@@ -88,54 +94,50 @@ export const TasksProvider = ({ children }) => {
   const updateTask = async (task) => {
     setLoading(true);
     try {
-      const res = await axios.patch(`${serverUrl}/task/${task._id}`, task);
-
-      // update the task in the tasks array
-      const newTasks = tasks.map((tsk) => {
-        return tsk._id === res.data._id ? res.data : tsk;
+      const res = await axios.patch(`${serverUrl}/task/${task._id}`, task, {
+        withCredentials: true,
       });
-
-      toast.success("Task updated successfully");
-
+      const newTasks = tasks.map((tsk) =>
+        tsk._id === res.data._id ? res.data : tsk
+      );
       setTasks(newTasks);
+      toast.success("Task updated successfully");
     } catch (error) {
       console.log("Error updating task", error);
     }
+    setLoading(false);
   };
 
   const deleteTask = async (taskId) => {
     setLoading(true);
     try {
-      await axios.delete(`${serverUrl}/task/${taskId}`);
-
-      // remove the task from the tasks array
+      await axios.delete(`${serverUrl}/task/${taskId}`, {
+        withCredentials: true,
+      });
       const newTasks = tasks.filter((tsk) => tsk._id !== taskId);
-
       setTasks(newTasks);
     } catch (error) {
       console.log("Error deleting task", error);
     }
+    setLoading(false);
   };
 
   const handleInput = (name) => (e) => {
     if (name === "setTask") {
       setTask(e);
+    } else if (name === "completed") {
+      setTask({ ...task, [name]: e.target.value === "true" });
     } else {
       setTask({ ...task, [name]: e.target.value });
     }
   };
 
-  // get completed tasks
   const completedTasks = tasks.filter((task) => task.completed);
-
-  // get pending tasks
   const activeTasks = tasks.filter((task) => !task.completed);
 
   useEffect(() => {
-    getTasks();
+    if (userId) getTasks();
   }, [userId]);
-
-  console.log("Active tasks", activeTasks);
 
   return (
     <TasksContext.Provider
@@ -143,7 +145,6 @@ export const TasksProvider = ({ children }) => {
         tasks,
         loading,
         task,
-        tasks,
         getTask,
         createTask,
         updateTask,
@@ -169,6 +170,4 @@ export const TasksProvider = ({ children }) => {
   );
 };
 
-export const useTasks = () => {
-  return React.useContext(TasksContext);
-};
+export const useTasks = () => React.useContext(TasksContext);

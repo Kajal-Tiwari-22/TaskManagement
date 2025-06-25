@@ -12,10 +12,9 @@ const port = process.env.PORT || 8000;
 
 const app = express();
 
-// ✅ CORS configuration: allow multiple origins (local + vercel)
 const allowedOrigins = [
-  "http://localhost:3000",
-  "https://task-management-eta-ashy.vercel.app"
+  "https://task-management-eta-ashy.vercel.app",
+  "http://localhost:3000"
 ];
 
 app.use(
@@ -30,6 +29,7 @@ app.use(
     credentials: true,
   })
 );
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
