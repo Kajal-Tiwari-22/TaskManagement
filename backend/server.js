@@ -12,13 +12,25 @@ const port = process.env.PORT || 8000;
 
 const app = express();
 
-// middleware
+// ✅ CORS configuration: allow multiple origins (local + vercel)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://task-management-eta-ashy.vercel.app"
+];
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -28,9 +40,8 @@ app.get("/", (req, res) => {
   res.send("🚀 Task Manager API is Live!");
 });
 
-// routes
+// ✅ Load all route files dynamically
 const routeFiles = fs.readdirSync("./src/routes");
-
 routeFiles.forEach((file) => {
   import(`./src/routes/${file}`)
     .then((route) => {
@@ -41,13 +52,13 @@ routeFiles.forEach((file) => {
     });
 });
 
-// error handler middleware (keep after all routes)
+// ✅ Global error handler
 app.use(errorHandler);
 
+// ✅ Start server
 const server = async () => {
   try {
     await connect();
-
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
