@@ -23,14 +23,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// error handler middleware
-app.use(errorHandler);
+// ✅ Root route for Render test
+app.get("/", (req, res) => {
+  res.send("🚀 Task Manager API is Live!");
+});
 
-//routes
+// routes
 const routeFiles = fs.readdirSync("./src/routes");
 
 routeFiles.forEach((file) => {
-  // use dynamic import
   import(`./src/routes/${file}`)
     .then((route) => {
       app.use("/api/v1", route.default);
@@ -40,6 +41,9 @@ routeFiles.forEach((file) => {
     });
 });
 
+// error handler middleware (keep after all routes)
+app.use(errorHandler);
+
 const server = async () => {
   try {
     await connect();
@@ -48,7 +52,7 @@ const server = async () => {
       console.log(`Server is running on port ${port}`);
     });
   } catch (error) {
-    console.log("Failed to strt server.....", error.message);
+    console.log("Failed to start server.....", error.message);
     process.exit(1);
   }
 };
